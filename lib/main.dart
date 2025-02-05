@@ -1,8 +1,6 @@
-import 'dart:convert';
-
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:todo_app/todo.dart';
+import 'package:todo_app/todo_repository.dart';
 import 'package:todo_app/todo_widget.dart';
 
 void main() {
@@ -35,24 +33,25 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final TodoRepository _todoRepository = TodoRepository();
   List<Todo> _todos = [];
   final TextEditingController _controller = TextEditingController();
-  final dio = Dio();
+
+  @override
+  void initState() {
+    super.initState();
+    Future(
+      () async {
+        await fetchTodos();
+      },
+    );
+  }
 
   Future<void> fetchTodos() async {
-    // GET
-    final response = await dio.get('http://localhost:8080/todos');
-    List<dynamic> jsonData = json.decode(response.data);
-    List<Todo> todos = jsonData.map((data) => Todo.fromJson(data)).toList();
+    final todos = await _todoRepository.getTodos();
     setState(() {
       _todos = todos;
     });
-  }
-
-  Future<void> addTodo(String text) async {
-    // POST
-    final data = {'text': text};
-    await dio.post('http://localhost:8080/todos', data: data);
   }
 
   @override
@@ -63,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
           title: Text(widget.title),
         ),
         body: Padding(
-          padding: EdgeInsets.all(40),
+          padding: EdgeInsets.symmetric(horizontal: 40, vertical: 20),
           child: Center(
             child: Column(
               children: <Widget>[
@@ -88,9 +87,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     IconButton(
                       onPressed: () async {
-                        await addTodo(_controller.text);
+                        await _todoRepository.addTodo(_controller.text);
                         _controller.clear();
-
                         await fetchTodos();
                       },
                       icon: Icon(
@@ -105,8 +103,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     itemCount: _todos.length,
                     itemBuilder: (context, index) {
                       return TodoWidget(
-                        text: _todos[index].text,
-                        done: _todos[index].done,
+                        todo: _todos[index],
+                        onUpdate: fetchTodos,
                       );
                     },
                   ),
