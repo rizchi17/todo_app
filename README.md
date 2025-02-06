@@ -3,7 +3,7 @@
 バックエンドを学ぶためのTodoアプリのフロント
 
 ## バックエンド
-`https://github.com/rizchi17/todo_app`
+[todo_api](https://github.com/rizchi17/todo_api)
 
 ## TODOの状態管理
 setState で管理 → Riverpod で管理 [now]
