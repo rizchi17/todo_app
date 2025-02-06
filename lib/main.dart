@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:todo_app/todo.dart';
-import 'package:todo_app/todo_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:todo_app/todo_provider.dart';
 import 'package:todo_app/todo_widget.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -23,39 +23,20 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class MyHomePage extends ConsumerStatefulWidget {
   const MyHomePage({super.key, required this.title});
 
   final String title;
-
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  final TodoRepository _todoRepository = TodoRepository();
-  List<Todo> _todos = [];
+class _MyHomePageState extends ConsumerState<MyHomePage> {
   final TextEditingController _controller = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    Future(
-      () async {
-        await fetchTodos();
-      },
-    );
-  }
-
-  Future<void> fetchTodos() async {
-    final todos = await _todoRepository.getTodos();
-    setState(() {
-      _todos = todos;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final asyncTodos = ref.watch(todoListProvider);
     return Scaffold(
         appBar: AppBar(
           backgroundColor: Theme.of(context).colorScheme.inversePrimary,
@@ -68,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: <Widget>[
                 IconButton(
                   onPressed: () async {
-                    await fetchTodos();
+                    await ref.read(todoListProvider.notifier).fetchTodos();
                   },
                   icon: Icon(Icons.refresh),
                 ),
@@ -87,9 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     IconButton(
                       onPressed: () async {
-                        await _todoRepository.addTodo(_controller.text);
+                        await ref.read(todoListProvider.notifier).addTodo(_controller.text);
                         _controller.clear();
-                        await fetchTodos();
                       },
                       icon: Icon(
                         Icons.add_circle,
@@ -98,17 +78,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                   ],
                 ),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _todos.length,
-                    itemBuilder: (context, index) {
-                      return TodoWidget(
-                        todo: _todos[index],
-                        onUpdate: fetchTodos,
-                      );
-                    },
-                  ),
-                )
+                switch (asyncTodos) {
+                  AsyncData(:final value) => Expanded(
+                      child: ListView.builder(
+                        itemCount: value.length,
+                        itemBuilder: (context, index) {
+                          return TodoWidget(
+                            todo: value[index],
+                          );
+                        },
+                      ),
+                    ),
+                  AsyncError() => Text('Error'),
+                  _ => const Center(child: CircularProgressIndicator()),
+                }
               ],
             ),
           ),

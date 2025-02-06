@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo_app/todo.dart';
-import 'package:todo_app/todo_repository.dart';
+import 'package:todo_app/todo_provider.dart';
 
-class TodoWidget extends StatefulWidget {
-  const TodoWidget({super.key, required this.todo, required this.onUpdate});
+class TodoWidget extends ConsumerStatefulWidget {
+  const TodoWidget({super.key, required this.todo});
   final Todo todo;
-  final Function() onUpdate;
 
   @override
-  State<TodoWidget> createState() => _TodoWidgetState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _TodoWidgetState();
 }
 
-class _TodoWidgetState extends State<TodoWidget> {
-  final TodoRepository _todoRepository = TodoRepository();
-
+class _TodoWidgetState extends ConsumerState<TodoWidget> {
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -23,8 +21,7 @@ class _TodoWidgetState extends State<TodoWidget> {
           children: [
             IconButton(
                 onPressed: () async {
-                  await _todoRepository.deleteTodo(widget.todo.id);
-                  widget.onUpdate();
+                  await ref.read(todoListProvider.notifier).deleteTodo(widget.todo.id);
                 },
                 icon: Icon(Icons.delete)),
             Text(widget.todo.text),
@@ -33,8 +30,7 @@ class _TodoWidgetState extends State<TodoWidget> {
         Checkbox(
           value: widget.todo.done,
           onChanged: (bool? value) async {
-            await _todoRepository.changeTodoStatus(widget.todo);
-                  widget.onUpdate();
+            await ref.read(todoListProvider.notifier).toggleTodoStatus(widget.todo);
           },
         ),
       ],
